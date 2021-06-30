@@ -36,6 +36,11 @@ let
       allowFun attrs0 "cargoBuild"
         ''cargo $cargo_options build $cargo_build_options >> $cargo_build_output_json'';
 
+    # The command to use for checking the package.
+    cargoCheck =
+      allowFun attrs0 "cargoCheck"
+        ''cargo $cargo_options check $cargo_build_options >> $cargo_build_output_json'';
+
     # Options passed to cargo build, i.e. `cargo build <OPTS>`. These options
     # can be accessed during the build through the environment variable
     # `cargo_build_options`. <br/>
@@ -193,6 +198,7 @@ let
       compressTarget
 
       cargoBuild
+      cargoCheck
       cargoBuildOptions
       remapPathPrefix
       copyBins

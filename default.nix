@@ -77,6 +77,57 @@ let
         in
           drv.overrideAttrs config.overrideMain;
     in
+    buildTopLevel;
+
+  # Run cargo check
+  checkPackage = arg:
+    let
+      config = mkConfig arg;
+      gitDependencies =
+        libb.findGitDependencies { inherit (config) cargotomls cargolock; };
+      cargoconfig =
+        if builtinz.pathExists (toString config.root + "/.cargo/config")
+        then builtins.readFile (config.root + "/.cargo/config")
+        else null;
+      build = args: import ./build.nix (
+        {
+          inherit gitDependencies;
+          version = config.packageVersion;
+        } // config.buildConfig // defaultBuildAttrs // args
+      );
+
+      # the dependencies from crates.io
+      buildDeps =
+        build
+          {
+            pname = "${config.packageName}-deps";
+            src = libb.dummySrc {
+              inherit cargoconfig;
+              inherit (config) cargolock cargotomls copySources copySourcesFrom;
+            };
+            inherit (config) userAttrs;
+            # TODO: custom cargoTestCommands should not be needed here
+            cargoTestCommands = map (cmd: "${cmd} || true") config.buildConfig.cargoTestCommands;
+            copyTarget = false;
+            copyBins = false;
+            copyBinsFilter = ".";
+            copyDocsToSeparateOutput = false;
+            builtDependencies = [];
+          };
+
+      # the top-level build
+      buildTopLevel =
+        let
+          drv =
+            build
+              {
+                pname = config.packageName;
+                inherit (config) userAttrs src;
+                builtDependencies = lib.optional (! config.isSingleStep) buildDeps;
+              };
+        in
+          drv.overrideAttrs config.overrideMain;
+    in
       buildTopLevel;
 in
 { inherit buildPackage; }

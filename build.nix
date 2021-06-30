@@ -1,4 +1,6 @@
 { src
+  #| Command for running only the check and not generate a derivation
+, cargoCheck
   #| What command to run during the build phase
 , cargoBuild
 , cargoBuildOptions
